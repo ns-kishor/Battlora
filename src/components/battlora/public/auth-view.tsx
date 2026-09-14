@@ -11,11 +11,6 @@ import { useAuth } from "../auth-context";
 import { BrandLogo } from "../shared/kit";
 import { api } from "@/lib/api-client";
 
-const DEMO_ACCOUNTS = [
-  { role: "Super Admin", email: "admin@battlora.gg", password: "Admin@123" },
-  { role: "Team Captain", email: "captain@battlora.gg", password: "Captain@123" },
-];
-
 export function AuthView({ mode }: { mode: "login" | "register" }) {
   const { navigate, route } = useRouter();
   const { login, register } = useAuth();
@@ -42,19 +37,6 @@ export function AuthView({ mode }: { mode: "login" | "register" }) {
       navigate(next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function quickLogin(email: string, password: string) {
-    setError(null);
-    setBusy(true);
-    try {
-      await login(email, password);
-      navigate(email.startsWith("admin") ? "/admin" : "/dashboard");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setBusy(false);
     }
@@ -203,26 +185,6 @@ export function AuthView({ mode }: { mode: "login" | "register" }) {
                 </>
               )}
             </p>
-
-            {mode === "login" && (
-              <div className="mt-5 rounded-lg border border-border bg-background/60 p-3 space-y-2">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                  Demo accounts (one-click)
-                </p>
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.email}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => quickLogin(acc.email, acc.password)}
-                    className="w-full flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-xs hover:border-primary/40 transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    <span className="font-medium">{acc.role}</span>
-                    <span className="text-muted-foreground">{acc.email}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

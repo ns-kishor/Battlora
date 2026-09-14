@@ -22,3 +22,19 @@ Stage Summary:
 - E2E verified via agent-browser: home/leaderboard/detail render; captain login → dashboard KPIs → locked room credentials; admin login → KPIs → control center → result entry (10 teams, auto-scoring 12+10=22 etc.) → publish → leaderboard auto-update (Team Alpha 79→96) + notifications + audit log; payment verification → registration approval state machine; full 7-step wizard with new user → REG-2026-00028 → payment verify → team approve; mobile 390px no-overflow + compact leaderboard cards; auth guards redirect
 - Demo accounts: admin@battlora.gg / Admin@123 (Super Admin), captain@battlora.gg / Captain@123 (Team Alpha captain)
 - Lint: 0 errors. Dev server: all routes 200, no runtime errors
+
+---
+Task ID: 2
+Agent: Main agent (Super Z)
+Task: Remove "Demo accounts (one-click)" section from the login page
+
+Work Log:
+- Removed DEMO_ACCOUNTS constant, quickLogin() helper, and the one-click demo accounts JSX block from src/components/battlora/public/auth-view.tsx
+- Verified no leftover references (rg for DEMO_ACCOUNTS/quickLogin/Demo accounts → 0 matches)
+- ESLint on the file: 0 errors
+- Browser-verified via agent-browser: /#/login renders form + footer link only, demo section gone
+- Sanity check: POST /api/auth/login with admin credentials still returns SUPER_ADMIN user (manual login unaffected; seeded accounts still exist in DB)
+
+Stage Summary:
+- Login page no longer exposes demo account emails/passwords; sign-in must be done manually with credentials
+- No dead code left behind; auth flow unchanged
