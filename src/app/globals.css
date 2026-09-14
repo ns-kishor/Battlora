@@ -173,6 +173,130 @@
   background-size: 100% 100%, 44px 44px, 44px 44px;
 }
 
+/* Full-bleed artwork hero: image + readability scrim + grid texture */
+.hero-art {
+  position: relative;
+  overflow: hidden;
+}
+.hero-art > img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center right;
+}
+.hero-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--background) 88%, transparent) 0%, color-mix(in srgb, var(--background) 55%, transparent) 45%, color-mix(in srgb, var(--background) 20%, transparent) 75%, color-mix(in srgb, var(--background) 45%, transparent) 100%),
+    linear-gradient(to top, var(--background) 0%, transparent 30%);
+}
+.hero-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 50% -10%, color-mix(in srgb, var(--primary) 14%, transparent), transparent),
+    linear-gradient(to right, color-mix(in srgb, #ffffff 2.5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, #ffffff 2.5%, transparent) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+}
+
+/* Artwork banner with bottom scrim for text chips */
+.banner-scrim {
+  position: relative;
+}
+.banner-scrim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top, color-mix(in srgb, #000000 72%, transparent) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+/* Esports HUD corner brackets */
+.hud-corners {
+  position: relative;
+}
+.hud-corners::before,
+.hud-corners::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+  border-style: solid;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.hud-corners::before {
+  top: 6px;
+  left: 6px;
+  border-width: 2px 0 0 2px;
+}
+.hud-corners::after {
+  bottom: 6px;
+  right: 6px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Soft glow behind display headlines */
+.text-glow {
+  text-shadow: 0 0 34px color-mix(in srgb, var(--primary) 38%, transparent);
+}
+
+/* Left accent slash for section titles */
+.slash-accent {
+  position: relative;
+  padding-left: 0.875rem;
+}
+.slash-accent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.18em;
+  bottom: 0.18em;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, var(--primary), color-mix(in srgb, var(--primary) 25%, transparent));
+}
+
+/* Subtle animated shimmer sweep for featured prize chip */
+@keyframes prize-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.prize-shimmer {
+  background: linear-gradient(110deg, rgba(255, 178, 36, 0.16) 30%, rgba(255, 214, 130, 0.4) 50%, rgba(255, 178, 36, 0.16) 70%);
+  background-size: 200% 100%;
+  animation: prize-shimmer 3.2s linear infinite;
+}
+
+/* Stronger scrim on small screens so hero text stays readable over artwork */
+@media (max-width: 640px) {
+  .hero-art::before {
+    background:
+      linear-gradient(to right, color-mix(in srgb, var(--background) 85%, transparent) 0%, color-mix(in srgb, var(--background) 68%, transparent) 60%, color-mix(in srgb, var(--background) 45%, transparent) 100%),
+      linear-gradient(to top, var(--background) 0%, transparent 45%);
+  }
+}
+
+/* Artwork backdrop overlay for the auth page (image sits behind, scrim above, card above both) */
+.auth-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 45%, color-mix(in srgb, var(--background) 80%, transparent), color-mix(in srgb, var(--background) 93%, transparent));
+}
+
 .card-hover {
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }

@@ -38,3 +38,24 @@ Work Log:
 Stage Summary:
 - Login page no longer exposes demo account emails/passwords; sign-in must be done manually with credentials
 - No dead code left behind; auth flow unchanged
+
+---
+Task ID: 3
+Agent: Main agent (Super Z)
+Task: Make UI more professional with gaming vibe; add Free Fire themed banners/artwork
+
+Work Log:
+- Generated 7 AI artworks (1440x736, dark navy + orange ember palette, textless) via z-ai-web-dev-sdk → public/images/: hero-bg, banner-pro-series, banner-weekend-clash, banner-community-cup, banner-champions-league, cta-bg, auth-bg (scripts/generate-art.mjs, supports single-file regen filter)
+- VLM QA loop: rejected hero v1 (baked-in Chinese text) + champions banner v1 (Chinese text) → regenerated with stronger anti-text prompts; final all pass (8-9/10)
+- Patched DB tournament.bannerUrl to new artwork (scripts/update-banners.mjs); updated prisma/seed.ts to reference static images (removed SVG bannerImage generator)
+- globals.css: added .hero-art (image+scrim+grid layers with explicit z-index stacking), .banner-scrim, .hud-corners (bracket accents), .text-glow, .slash-accent (section titles), .prize-shimmer, .auth-scrim, mobile scrim media query
+- home.tsx: hero now full-bleed soldier artwork w/ gradient scrim + animated LIVE chip (links to ongoing tournament), stat cards with HUD corners, featured card with banner-scrim + prize chip + LIVE badge, CTA section over ember artwork
+- tournament-card.tsx: taller banner, slower zoom on hover, prize chip + "N slots left" urgency chip over artwork
+- tournament-detail.tsx: banner header raised to h-64/sm:h-80
+- auth-view.tsx: atmospheric artwork backdrop + scrim behind glass card with HUD corners
+- kit.tsx: SectionHeader titles get slash-accent
+
+Stage Summary:
+- ESLint 0 errors; dev server compiles clean (only HMR logs in console)
+- VLM reviews: homepage 9/10 ("production-ready, competitive with Battlefy/Challengermode"), mobile 390px hero/card/login all PASS, detail page 9/10 (only "artifact" = nextjs-portal dev-tools indicator, not app UI), list page all 4 banners + chips clean
+- Verified z-index layering fix (scrim above artwork, content above scrim) via browser eval

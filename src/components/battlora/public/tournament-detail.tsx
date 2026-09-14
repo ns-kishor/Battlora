@@ -154,9 +154,9 @@ export function TournamentDetail({ idOrSlug }: { idOrSlug: string }) {
   return (
     <div className="pb-10">
       {/* ---------- Banner header ---------- */}
-      <div className="relative h-56 sm:h-72 bg-gradient-to-br from-primary/25 via-card to-background border-b border-border">
+      <div className="relative h-64 sm:h-80 bg-gradient-to-br from-primary/25 via-card to-background border-b border-border">
         {t.bannerUrl && (
-           
+          
           <img src={t.bannerUrl} alt={`${t.name} banner`} className="h-full w-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />

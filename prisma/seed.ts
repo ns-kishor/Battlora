@@ -33,22 +33,6 @@ async function pngDataUrl(svg: string): Promise<string> {
   return `data:image/png;base64,${buf.toString("base64")}`;
 }
 
-async function bannerImage(title: string, subtitle: string, c1: string, c2: string): Promise<string> {
-  return pngDataUrl(`<svg width="1200" height="500" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
-      </linearGradient>
-    </defs>
-    <rect width="1200" height="500" fill="#0a0e16"/>
-    <rect width="1200" height="500" fill="url(#g)" opacity="0.55"/>
-    ${Array.from({ length: 14 }, (_, i) => `<circle cx="${60 + i * 90}" cy="${rnd() * 500}" r="${1.5 + rnd() * 2.5}" fill="#ffffff" opacity="0.25"/>`).join("")}
-    <text x="60" y="235" font-family="Arial Black, Arial" font-size="64" font-weight="900" fill="#ffffff">${title}</text>
-    <text x="60" y="305" font-family="Arial" font-size="30" fill="#ffffff" opacity="0.85">${subtitle}</text>
-    <rect x="60" y="345" width="120" height="8" fill="#ffffff" opacity="0.9"/>
-  </svg>`);
-}
-
 async function logoImage(initials: string, color: string): Promise<string> {
   return pngDataUrl(`<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
     <rect width="200" height="200" rx="28" fill="#141b2c"/>
@@ -221,12 +205,13 @@ async function main() {
   const resultMgr = await db.user.create({ data: { email: "results@battlora.gg", name: "Tanvir Islam", passwordHash: hashPassword("Admin@123"), role: "RESULT_MANAGER" } });
 
   // ---------- tournaments ----------
-  const banners = await Promise.all([
-    bannerImage("PRO SERIES", "Season 1 — Championship", "#FF7A1C", "#8B3A00"),
-    bannerImage("WEEKEND CLASH", "Saturday Night Battle", "#A855F7", "#4C1D95"),
-    bannerImage("COMMUNITY CUP", "Free Entry — Open to All", "#22C55E", "#14532D"),
-    bannerImage("CHAMPIONS LEAGUE", "2025 Grand Final — Archive", "#EAB308", "#713F12"),
-  ]);
+// Tournament banners use pre-generated esports artwork (scripts/generate-art.mjs)
+const banners = [
+  "/images/banner-pro-series.png",
+  "/images/banner-weekend-clash.png",
+  "/images/banner-community-cup.png",
+  "/images/banner-champions-league.png",
+];
 
   const proSeries = await db.tournament.create({
     data: {

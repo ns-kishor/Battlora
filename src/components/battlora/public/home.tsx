@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Bell,
   CalendarDays,
+  ChevronRight,
   Coins,
   Flame,
   Megaphone,
@@ -66,16 +67,17 @@ export function Home() {
   return (
     <div>
       {/* ---------------- HERO ---------------- */}
-      <section className="hero-grid-bg relative overflow-hidden border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
+      <section className="hero-art relative overflow-hidden border-b border-border">
+        <img src="/images/hero-bg.png" alt="" aria-hidden="true" />
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 py-16 sm:py-24 lg:py-28">
           <div className="max-w-3xl animate-in-up">
             <Badge variant="outline" className="mb-5 bg-primary/10 border-primary/30 text-primary gap-1.5 px-3 py-1">
               <Flame className="h-3.5 w-3.5" /> Professional Free Fire Esports
             </Badge>
             <h1 className="font-display font-bold text-4xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight">
-              <span className="text-gradient">BATTLE.</span>{" "}
+              <span className="text-gradient text-glow">BATTLE.</span>{" "}
               <span className="text-foreground">COMPETE.</span>{" "}
-              <span className="text-gradient">CONQUER.</span>
+              <span className="text-gradient text-glow">CONQUER.</span>
             </h1>
             <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl">
               Compete in professional Free Fire tournaments, climb the leaderboard and prove your
@@ -92,12 +94,27 @@ export function Home() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-base px-7"
+                className="text-base px-7 glass"
                 onClick={() => navigate("/tournaments")}
               >
                 View Tournaments
               </Button>
             </div>
+
+            {/* Live now chip */}
+            {featured?.status === "ONGOING" && (
+              <button
+                onClick={() => navigate(`/tournaments/${featured.slug ?? featured.id}`)}
+                className="mt-7 inline-flex items-center gap-2.5 rounded-full border border-rose-500/40 bg-rose-500/10 backdrop-blur-sm px-4 py-1.5 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition-colors cursor-pointer"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-400" />
+                </span>
+                {featured.name} — Match in progress
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Hero statistics */}
@@ -112,7 +129,7 @@ export function Home() {
                 icon: Coins,
               },
             ].map((s) => (
-              <Card key={s.label} className="glass card-hover">
+              <Card key={s.label} className="glass hud-corners card-hover">
                 <CardContent className="p-4 sm:p-5 flex items-center gap-3">
                   <span className="grid place-items-center rounded-lg bg-primary/10 border border-primary/20 p-2.5 text-primary shrink-0">
                     <s.icon className="h-5 w-5" />
@@ -138,11 +155,11 @@ export function Home() {
               title="Featured Tournament"
               subtitle="The spotlight event you don't want to miss"
             />
-            <Card className="mt-5 overflow-hidden card-hover">
+            <Card className="mt-5 overflow-hidden card-hover hud-corners">
               <div className="grid lg:grid-cols-5">
-                <div className="relative lg:col-span-2 h-52 lg:h-auto bg-gradient-to-br from-primary/30 via-card to-background">
+                <div className="relative lg:col-span-2 h-56 sm:h-64 lg:h-auto banner-scrim bg-gradient-to-br from-primary/30 via-card to-background">
                   {featured.bannerUrl ? (
-                     
+                    
                     <img
                       src={featured.bannerUrl}
                       alt={`${featured.name} banner`}
@@ -153,7 +170,18 @@ export function Home() {
                       <Trophy className="h-16 w-16 text-primary/40" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-card via-transparent to-transparent" />
+                  <div className="absolute inset-0 z-0 bg-gradient-to-t lg:bg-gradient-to-r from-card via-transparent to-transparent" />
+                  {/* Prize chip on artwork */}
+                  <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end justify-between gap-2">
+                    <span className="prize-shimmer inline-flex items-center gap-1.5 rounded-lg border border-amber-400/40 px-2.5 py-1.5 text-xs font-bold text-amber-200 backdrop-blur-sm">
+                      <Coins className="h-3.5 w-3.5" /> {formatMoney(featured.prizePool)}
+                    </span>
+                    {featured.status === "ONGOING" && (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-300 backdrop-blur-sm">
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" /> Live
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="lg:col-span-3 p-5 sm:p-7 space-y-5">
                   <div id="featured-heading" className="flex items-start justify-between gap-3 flex-wrap">
@@ -323,12 +351,15 @@ export function Home() {
         )}
 
         {/* ---------------- CTA BANNER ---------------- */}
-        <section className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-card to-card p-8 sm:p-12 text-center relative overflow-hidden">
-          <div className="absolute inset-0 hero-grid-bg opacity-40" />
-          <div className="relative">
-            <Bell className="h-8 w-8 text-primary mx-auto mb-4" />
+        <section className="relative overflow-hidden rounded-2xl border border-primary/25">
+          <img src="/images/cta-bg.png" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-background/85 via-background/70 to-primary/10" />
+          <div className="relative p-8 sm:p-12 text-center">
+            <span className="mx-auto mb-4 grid place-items-center rounded-xl border border-primary/30 bg-primary/10 p-3 text-primary hud-corners">
+              <Bell className="h-6 w-6" />
+            </span>
             <h2 className="font-display text-2xl sm:text-3xl font-bold">
-              Ready to lead your squad to Booyah?
+              Ready to lead your squad to <span className="text-gradient text-glow">Booyah?</span>
             </h2>
             <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
               Create your team, pick a tournament and start your journey to the top of the
@@ -339,7 +370,7 @@ export function Home() {
                 <Swords className="h-4 w-4" /> Find a Tournament
               </Button>
               {!user && (
-                <Button size="lg" variant="outline" onClick={() => navigate("/register")}>
+                <Button size="lg" variant="outline" className="glass" onClick={() => navigate("/register")}>
                   Create Free Account
                 </Button>
               )}

@@ -43,13 +43,17 @@ export function AuthView({ mode }: { mode: "login" | "register" }) {
   }
 
   return (
-    <div className="hero-grid-bg min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md animate-in-up">
+    <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* Artwork backdrop */}
+      <img src="/images/auth-bg.png" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="auth-scrim" />
+
+      <div className="relative z-10 w-full max-w-md animate-in-up">
         <div className="text-center mb-6">
           <BrandLogo size="lg" />
         </div>
 
-        <Card className="glass border-border">
+        <Card className="glass border-border hud-corners">
           <CardHeader>
             <CardTitle className="font-display text-2xl">
               {mode === "login" ? "Welcome back" : "Create your account"}
