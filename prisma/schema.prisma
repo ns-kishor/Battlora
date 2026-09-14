@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// BATTLEORA — Free Fire Esports Tournament Management Platform
+// Core entities per PRD section 51
+// Note: SQLite does not support Prisma enums → string codes
+// validated in src/lib/types.ts
+// ============================================================
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  avatarUrl     String?
+  // SUPER_ADMIN | TOURNAMENT_ADMIN | MODERATOR | RESULT_MANAGER | FINANCE | CAPTAIN | PLAYER
+  role          String        @default("PLAYER")
+  // ACTIVE | SUSPENDED | BANNED
+  status        String        @default("ACTIVE")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  sessions      Session[]
+  teamCaptained Team?         @relation("CaptainTeam")
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+  complaints    Complaint[]   @relation("ComplaintSubmitter")
+  penaltiesGiven Penalty[]    @relation("PenaltyIssuer")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Team {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  logoUrl       String?
+  captainId     String        @unique
+  captain       User          @relation("CaptainTeam", fields: [captainId], references: [id])
+  contactNumber String?
+  email         String?
+  // PENDING | VERIFIED | SUSPENDED | BANNED
+  status        String        @default("PENDING")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  players       Player[]
+  registrations Registration[]
+  matchResults  MatchResult[]
+  penalties     Penalty[]
+  complaints    Complaint[]
+}
+
+model Player {
+  id           String   @id @default(cuid())
+  teamId       String
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  realName     String
+  ign          String
+  uid          String   @unique
+  phone        String?
+  // IGL | RUSHER | SNIPER | SUPPORT | SCOUT | PLAYER | SUBSTITUTE
+  role         String   @default("PLAYER")
+  photoUrl     String?
+  // PENDING | VERIFIED | SUSPENDED | BANNED
+  status       String   @default("PENDING")
+  isSubstitute Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Tournament {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  name              String
+  description       String         @default("")
+  bannerUrl         String?
+  game              String         @default("Free Fire")
+  // Solo | Duo | Squad
+  mode              String         @default("Squad")
+  format            String         @default("Battle Royale — Points System")
+  // DRAFT | REGISTRATION_OPEN | REGISTRATION_CLOSED | UPCOMING | ONGOING | COMPLETED | CANCELLED
+  status            String         @default("DRAFT")
+  featured          Boolean        @default(false)
+  entryFee          Float          @default(0)
+  teamLimit         Int            @default(48)
+  playersPerTeam    Int            @default(4)
+  registrationStart DateTime?
+  registrationEnd   DateTime?
+  tournamentStart   DateTime?
+  tournamentEnd     DateTime?
+  matchCount        Int            @default(6)
+  substituteAllowed Boolean        @default(true)
+  // JSON: { placementPoints: {"1":12,...,"default":0}, killPoint: 1 }
+  scoringConfig     String         @default("{\"placementPoints\":{\"1\":12,\"2\":9,\"3\":8,\"4\":7,\"5\":6,\"6\":5,\"7\":4,\"8\":3,\"9\":2,\"10\":1,\"default\":0},\"killPoint\":1}")
+  // JSON: ["TOTAL_POINTS","FIRST_PLACES","TOTAL_KILLS","BEST_PLACEMENT","LATEST_MATCH"]
+  tieBreakConfig    String         @default("[\"TOTAL_POINTS\",\"FIRST_PLACES\",\"TOTAL_KILLS\",\"BEST_PLACEMENT\",\"LATEST_MATCH\"]")
+  // JSON rulebook: [{ category, items: [{type: paragraph|bullets|numbered|notice|warning, text}] }]
+  rulesJson         String         @default("[]")
+  prizePool         Float          @default(0)
+  // JSON: [{ name, amount, description }]
+  prizeConfig       String         @default("[]")
+  resultsLocked     Boolean        @default(false)
+  lockedAt          DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  registrations     Registration[]
+  matches           Match[]
+  announcements     Announcement[]
+  complaints        Complaint[]
+  penalties         Penalty[]
+  prizes            Prize[]
+}
+
+model Registration {
+  id                String      @id @default(cuid())
+  regId             String      @unique // e.g. REG-2026-00128
+  tournamentId      String
+  tournament        Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamId            String
+  team              Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  // DRAFT | SUBMITTED | PAYMENT_PENDING | UNDER_REVIEW | APPROVED | REJECTED | CANCELLED | BANNED
+  status            String      @default("PAYMENT_PENDING")
+  agreementAccepted Boolean     @default(false)
+  submittedAt       DateTime    @default(now())
+  reviewedAt        DateTime?
+  reviewedById      String?
+  reviewNote        String?
+  payment           Payment?
+
+  @@unique([tournamentId, teamId])
+}
+
+model Payment {
+  id              String       @id @default(cuid())
+  registrationId  String       @unique
+  registration    Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  // bKash | Nagad | Rocket | Bank Transfer | ...
+  method          String
+  transactionId   String
+  senderNumber    String
+  screenshotUrl   String?
+  amount          Float        @default(0)
+  // PENDING | VERIFIED | REJECTED | REFUNDED
+  status          String       @default("PENDING")
+  verifiedAt      DateTime?
+  verifiedById    String?
+  rejectionReason String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Match {
+  id              String        @id @default(cuid())
+  tournamentId    String
+  tournament      Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matchNumber     Int
+  date            DateTime
+  map             String        @default("Bermuda")
+  mode            String        @default("Squad")
+  roomId          String?
+  roomPassword    String?
+  roomReleaseAt   DateTime?
+  roomPublished   Boolean       @default(false)
+  // SCHEDULED | ROOM_OPEN | LIVE | COMPLETED | CANCELLED | POSTPONED
+  status          String        @default("SCHEDULED")
+  resultPublished Boolean       @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+
+  results         MatchResult[]
+}
+
+model MatchResult {
+  id              String    @id @default(cuid())
+  matchId         String
+  match           Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  teamId          String
+  team            Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  placement       Int       @default(0)
+  kills           Int       @default(0)
+  placementPoints Int       @default(0)
+  killPoints      Int       @default(0)
+  totalPoints     Int       @default(0)
+  published       Boolean   @default(false)
+  enteredById     String?
+  // JSON snapshot of previous values — result correction audit trail
+  previousValue   String?
+  correctedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@unique([matchId, teamId])
+}
+
+model Complaint {
+  id            String     @id @default(cuid())
+  ticketId      String     @unique // e.g. CMP-2026-00042
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matchId       String?
+  teamId        String
+  team          Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  submittedById String
+  submitter     User       @relation("ComplaintSubmitter", fields: [submittedById], references: [id])
+  // HACK_CHEAT | TEAMING | BUG_ABUSE | ACCOUNT_ISSUE | WRONG_RESULT | PLAYER_ISSUE | OTHER
+  type          String
+  description   String
+  // PENDING | UNDER_REVIEW | CONFIRMED | REJECTED | RESOLVED
+  status        String     @default("PENDING")
+  internalNotes String?
+  resolvedAt    DateTime?
+  createdAt     DateTime   @default(now())
+
+  evidence      Evidence[]
+}
+
+model Evidence {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  url         String // data URL (images) or link
+  // IMAGE | VIDEO | CLIP
+  type        String    @default("IMAGE")
+  name        String?
+  createdAt   DateTime  @default(now())
+}
+
+model Penalty {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matchId      String?
+  teamId       String?
+  team         Team?      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId     String?
+  // WARNING | POINT_DEDUCTION | KILL_DEDUCTION | MATCH_LOSS | PRIZE_DEDUCTION | DISQUALIFICATION | TOURNAMENT_BAN
+  type         String
+  value        Float      @default(0)
+  reason       String
+  active       Boolean    @default(true)
+  issuedById   String
+  issuer       User       @relation("PenaltyIssuer", fields: [issuedById], references: [id])
+  createdAt    DateTime   @default(now())
+}
+
+model Announcement {
+  id           String      @id @default(cuid())
+  title        String
+  description  String
+  tournamentId String?
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  // NORMAL | IMPORTANT | URGENT
+  priority     String      @default("NORMAL")
+  publishAt    DateTime    @default(now())
+  expiresAt    DateTime?
+  createdById  String?
+  createdAt    DateTime    @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  // REGISTRATION | PAYMENT | MATCH | ROOM | RESULT | COMPLAINT | PENALTY | ANNOUNCEMENT | GENERAL
+  type      String   @default("GENERAL")
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Prize {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  // 1st Prize | 2nd Prize | 3rd Prize | MVP Prize | Highest Kill Prize | ...
+  name         String
+  amount       Float      @default(0)
+  description  String?
+  winnerTeamId String?
+  // PENDING | APPROVED | PAID
+  status       String     @default("PENDING")
+  paidAt       DateTime?
+  notes        String?
+  createdAt    DateTime   @default(now())
+}
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName      String
+  action        String
+  entity        String
+  entityId      String?
+  previousValue String?
+  newValue      String?
+  createdAt     DateTime @default(now())
+}
+
+model PlatformSettings {
+  id                  String  @id @default("main")
+  platformName        String  @default("Battlora")
+  accentColor         String  @default("#FF7A1C")
+  contactEmail        String  @default("support@battlora.gg")
+  contactPhone        String  @default("+880 1700-000000")
+  // JSON: [{ name, number, type }]
+  paymentMethodsJson  String  @default("[]")
+  paymentInstructions String  @default("Send the entry fee to any wallet above, then submit your Transaction ID and payment screenshot in the registration form. Verification usually completes within 24 hours.")
+  // JSON: [{ q, a }]
+  faqJson             String  @default("[]")
+  updatedAt           DateTime @updatedAt
+}
