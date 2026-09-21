@@ -44,6 +44,7 @@ import { AdminAnnouncements } from "./admin/announcements";
 import { AdminUsers } from "./admin/users";
 import { AdminActivity } from "./admin/activity";
 import { AdminSettings } from "./admin/settings";
+import { AdminAccount } from "./admin/account";
 
 export function BattloraApp() {
   return (
@@ -186,6 +187,8 @@ function AdminRouter() {
       return <AdminActivity />;
     case "settings":
       return <AdminSettings />;
+    case "account":
+      return <AdminAccount />;
     default:
       return <AdminDashboard />;
   }

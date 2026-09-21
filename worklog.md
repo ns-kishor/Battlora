@@ -75,3 +75,29 @@ Work Log:
 Stage Summary:
 - ESLint 0 errors; /images/logo.png and /icon.png both 200 image/png
 - VLM QA: login page (logo + wordmark above glass card, sharp, aligned) PASS; desktop navbar PASS (no regression); mobile 390px PASS (no overflow/collision with hamburger); processed logo QA PASS (clean crop, nothing cut off)
+
+---
+Task ID: 5
+Agent: Main agent (Super Z)
+Task: Admin panel feature — admins can change their own name, login email, and password
+
+Work Log:
+- New API PATCH /api/me/account (src/app/api/me/account/route.ts), self-scoped to the session user:
+  - Name validation (2–60 chars); email validation + lowercase normalization + uniqueness check excluding self (409)
+  - Email or password changes require the current password (400 if missing, 403 if wrong)
+  - Password change: new hash via scrypt, revokes all OTHER sessions (current session kept alive)
+  - Idempotent no-op returns current user; audit log entries (no password material logged) + SECURITY notifications to self on email/password change
+- New admin section src/components/battlora/admin/account.tsx ("My Account"):
+  - Identity summary (name, RoleBadge, StatusBadge)
+  - Profile card: Full Name + Login Email; changing the email dynamically reveals a "Current Password" confirmation field; Save Profile disabled until dirty; calls auth refresh() so the sidebar chip updates instantly
+  - Password card: Current/New/Confirm fields with show-hide toggles and inline validation (min 6, match, must differ); hint that other devices get signed out
+- Wiring: ADMIN_NAV entry "My Account" (CircleUserRound icon, last item) in admin-layout.tsx; sidebar user chip converted to a clickable button that navigates to /admin/account; route case "account" → AdminAccount in app.tsx
+- Everything else untouched (no changes to existing pages, APIs, or captain dashboard)
+
+Stage Summary:
+- Full-project ESLint: 0 errors
+- API guards verified via curl: 401 unauthenticated, 400 missing password, 403 wrong password, 409 duplicate email, 400 short name, 200 no-op
+- E2E via agent-browser (fresh session): login → name change (sidebar live update) → email change to kishor@battlora.gg w/ password confirm → password change to Admin@456 → sign out → login with new credentials OK → all values restored to originals (Kishor Ahmed / admin@battlora.gg / Admin@123)
+- Security behaviors verified: old session cookie revoked after password change (user:null); "Login email changed"/"Password changed" SECURITY notifications received; audit log shows prev→new diffs for profile, action-only for password
+- Note: mid-test an agent-browser session glitch made physical clicks silently stop reaching the page (JS clicks + eval still worked; fixed by browser restart) — NOT an app bug; after restart all physical clicks worked
+- VLM QA desktop + mobile 390px: professional, no overflow/breakage

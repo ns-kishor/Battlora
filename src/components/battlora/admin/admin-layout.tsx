@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   Activity,
   Bell,
+  CircleUserRound,
   CreditCard,
   Gavel,
   LayoutDashboard,
@@ -38,6 +39,7 @@ const ADMIN_NAV = [
   { section: "users", label: "Users & Roles", icon: UserCog },
   { section: "activity", label: "Activity Logs", icon: Activity },
   { section: "settings", label: "Settings", icon: Settings },
+  { section: "account", label: "My Account", icon: CircleUserRound },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -99,15 +101,24 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="p-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-2.5 rounded-lg bg-secondary/60 border border-border p-2.5">
+          <button
+            onClick={() => {
+              navigate("/admin/account");
+              setSidebarOpen(false);
+            }}
+            className="w-full text-left flex items-center gap-2.5 rounded-lg bg-secondary/60 border border-border p-2.5 cursor-pointer transition-colors hover:border-primary/40 hover:bg-secondary"
+            aria-label="Manage my account"
+            title="Manage my account"
+          >
             <span className="grid h-8 w-8 place-items-center rounded-md bg-primary/15 text-primary shrink-0">
               <Shield className="h-4 w-4" />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{user.name}</p>
               <div className="mt-0.5"><RoleBadge role={user.role} /></div>
             </div>
-          </div>
+            <CircleUserRound className="h-4 w-4 text-muted-foreground shrink-0" />
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
