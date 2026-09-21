@@ -253,6 +253,11 @@
   text-shadow: 0 0 34px color-mix(in srgb, var(--primary) 38%, transparent);
 }
 
+/* Subtle ember glow for the brand emblem (restrained per PRD) */
+.logo-glow {
+  filter: drop-shadow(0 0 5px rgba(230, 0, 0, 0.4)) drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55));
+}
+
 /* Left accent slash for section titles */
 .slash-accent {
   position: relative;

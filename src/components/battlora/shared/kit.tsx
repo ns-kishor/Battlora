@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Crosshair } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { initials, getInitialsColor } from "@/lib/format";
 import {
@@ -26,12 +25,18 @@ import {
 
 export function BrandLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const dims = { sm: "text-lg", md: "text-xl", lg: "text-3xl" }[size];
-  const icon = { sm: 18, md: 22, lg: 32 }[size];
+  const icon = { sm: 22, md: 26, lg: 46 }[size];
   return (
-    <span className={cn("font-display font-bold tracking-wide flex items-center gap-2", dims)}>
-      <span className="grid place-items-center rounded-lg bg-primary/15 border border-primary/30 p-1">
-        <Crosshair className="text-primary" size={icon} strokeWidth={2.5} />
-      </span>
+    <span className={cn("font-display font-bold tracking-wide flex items-center gap-2.5", dims)}>
+      <img
+        src="/images/logo.png"
+        alt=""
+        aria-hidden="true"
+        width={icon}
+        height={icon}
+        className="logo-glow shrink-0"
+        style={{ width: icon, height: icon }}
+      />
       <span className="text-foreground">
         BATTLE<span className="text-primary">ORA</span>
       </span>

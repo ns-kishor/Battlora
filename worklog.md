@@ -59,3 +59,19 @@ Stage Summary:
 - ESLint 0 errors; dev server compiles clean (only HMR logs in console)
 - VLM reviews: homepage 9/10 ("production-ready, competitive with Battlefy/Challengermode"), mobile 390px hero/card/login all PASS, detail page 9/10 (only "artifact" = nextjs-portal dev-tools indicator, not app UI), list page all 4 banners + chips clean
 - Verified z-index layering fix (scrim above artwork, content above scrim) via browser eval
+
+---
+Task ID: 4
+Agent: Main agent (Super Z)
+Task: Install user-uploaded logo as the main site-wide logo of Battlora
+
+Work Log:
+- VLM-analyzed uploaded emblem (upload/ChatGPT_Image_Sep_21__2026__07_28_34_PM-removebg-preview.png): pure symbol (angular red "B", ~#E60000, transparent bg), no wordmark → keep BATTLEORA text beside it
+- scripts/install-logo.mjs (sharp): trimmed transparent padding (500x500 → 262x290 content), saved tight 512px emblem to public/images/logo.png; generated 512x512 favicon (emblem at 88%) to src/app/icon.png; removed unreferenced public/logo.svg
+- kit.tsx BrandLogo: replaced Crosshair icon-in-box with <img src="/images/logo.png"> (sm 22 / md 26 / lg 46 px) + BATTLEORA wordmark; dropped unused Crosshair import
+- globals.css: added .logo-glow (subtle red ember drop-shadow, restrained per PRD)
+- Component is shared → logo now appears on public navbar, mobile drawer, footer, login/register pages, register wizard, admin sidebar, dashboard, and app fallback screen; favicon now shows emblem in browser tab (site previously had none)
+
+Stage Summary:
+- ESLint 0 errors; /images/logo.png and /icon.png both 200 image/png
+- VLM QA: login page (logo + wordmark above glass card, sharp, aligned) PASS; desktop navbar PASS (no regression); mobile 390px PASS (no overflow/collision with hamburger); processed logo QA PASS (clean crop, nothing cut off)
