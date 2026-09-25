@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { ApiError } from "@/lib/auth";
 import { notify } from "@/lib/activity";
+import { getTournamentLeaderboard } from "@/lib/scoring";
 import { WITHDRAWAL_METHODS, POSITION_LABELS } from "@/lib/types";
 
 // ============================================================
@@ -127,6 +128,71 @@ export async function getEligiblePrizes(userId: string) {
 
   return { team, eligible };
 }
+
+/**
+ * Provisional podium for a captain's team: tournaments that are NOT yet
+ * locked (final results not officially published) where the team currently
+ * stands in the top 3. Purely informational — based on the same public
+ * standings the leaderboards page shows. The withdrawal form itself opens
+ * only after the administrator locks the final results.
+ */
+export async function getPendingPodium(teamId: string): Promise<PendingPodiumRow[]> {
+  const regs = await db.registration.findMany({
+    where: {
+      teamId,
+      status: "APPROVED",
+      tournament: { resultsLocked: false, status: { in: ["ONGOING", "COMPLETED"] } },
+    },
+    include: {
+      tournament: { select: { id: true, name: true, status: true, matchCount: true, prizeConfig: true } },
+    },
+  });
+
+  const pending: PendingPodiumRow[] = [];
+  for (const r of regs) {
+    const t = r.tournament;
+    const standings = await getTournamentLeaderboard(t.id);
+    const row = standings.find((x) => x.teamId === teamId);
+    if (!row || row.rank > 3 || row.disqualified || row.banned) continue;
+
+    // Provisional prize amount for the position currently held
+    const prizeRows = await db.prize.findMany({ where: { tournamentId: t.id } });
+    let amount = prizeRows
+      .filter((p) => positionFromPrizeName(p.name) === row.rank)
+      .reduce((sum, p) => sum + p.amount, 0);
+    if (amount === 0) {
+      try {
+        const cfg = JSON.parse(t.prizeConfig || "[]") as { name?: string; amount?: number }[];
+        amount = cfg
+          .filter((c) => c?.name && positionFromPrizeName(c.name) === row.rank)
+          .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+      } catch {
+        amount = 0;
+      }
+    }
+
+    pending.push({
+      tournament: { id: t.id, name: t.name },
+      position: row.rank as 1 | 2 | 3,
+      positionLabel: POSITION_LABELS[row.rank] ?? `${row.rank}th Place`,
+      provisionalAmount: amount,
+      tournamentStatus: t.status,
+      matchesPlayed: row.matchesPlayed,
+      matchesPlanned: t.matchCount,
+    });
+  }
+  return pending;
+}
+
+export type PendingPodiumRow = {
+  tournament: { id: string; name: string };
+  position: 1 | 2 | 3;
+  positionLabel: string;
+  provisionalAmount: number;
+  tournamentStatus: string;
+  matchesPlayed: number;
+  matchesPlanned: number;
+};
 
 export type EligiblePrizeRow = {
   prizeId: string;

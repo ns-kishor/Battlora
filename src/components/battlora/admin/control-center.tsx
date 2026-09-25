@@ -15,6 +15,8 @@ import {
   Ban,
   CalendarDays,
   CheckCircle2,
+  CircleAlert,
+  CircleCheckBig,
   Coins,
   DoorOpen,
   Gavel,
@@ -197,12 +199,12 @@ export function ControlCenter({ idOrSlug }: { idOrSlug: string }) {
                   </Button>
                 }
                 title="Lock final results?"
-                description="Locking makes all results read-only, finalizes the leaderboard, assigns prize winners and marks the tournament as completed. Further changes require Super Admin authorization."
+                description="Locking makes all results read-only, finalizes the leaderboard, assigns prize winners and marks the tournament as completed. The 1st, 2nd and 3rd-place teams are notified immediately and can then submit prize withdrawal requests from their dashboards. Further changes require Super Admin authorization."
                 confirmLabel="Lock & Finalize"
                 destructive={false}
                 onConfirm={async () => {
                   await api(`/api/tournaments/${t.id}/lock`, { json: {} });
-                  toast({ title: "Final results locked 🔒", description: "Leaderboard is now official and prizes are assigned." });
+                  toast({ title: "Final results locked 🔒", description: "Standings are official, prizes are assigned and the top 3 teams have been notified — prize withdrawal is now open on their dashboards." });
                   refetch();
                 }}
               />
@@ -210,6 +212,43 @@ export function ControlCenter({ idOrSlug }: { idOrSlug: string }) {
           </div>
         </div>
       </div>
+
+      {/* Finalization guidance — publishing match results is NOT the same as
+          publishing the final results; remind the admin what unlocks payouts */}
+      {!t.resultsLocked && stats.completed > 0 && (
+        <div
+          className={cn(
+            "rounded-xl border p-4 flex items-start gap-3",
+            stats.completed >= stats.matches
+              ? "border-primary/40 bg-primary/10"
+              : "border-border bg-secondary/40"
+          )}
+        >
+          {stats.completed >= stats.matches ? (
+            <CircleCheckBig className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          ) : (
+            <CircleAlert className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+          )}
+          <div className="min-w-0 space-y-1">
+            <p className="font-semibold text-sm">
+              {stats.completed >= stats.matches
+                ? "Ready to finalize — prize withdrawal is waiting on this step"
+                : "Finalize to open prize withdrawals for the top 3 teams"}
+            </p>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {stats.completed} of {stats.matches} match results published.{" "}
+              {stats.completed >= stats.matches
+                ? "Click “Lock Final Results” (top right) to publish the official final results — this assigns the 1st/2nd/3rd-place prize winners, notifies them, and opens the withdrawal form on their dashboards."
+                : "After all results are in, click “Lock Final Results” (top right) to publish the official final results — this assigns the prize winners, notifies them, and opens the withdrawal form on their dashboards."}
+            </p>
+            {data.prizes.length === 0 && data.tournament.prizeConfig.length > 0 && (
+              <p className="text-xs text-amber-400/90">
+                Prize records haven’t been created from this tournament’s prize configuration yet — they will be created automatically when you lock the final results.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Stat strip (PRD 36) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -1369,6 +1408,31 @@ function PrizesTab({ data, refetch }: { data: ControlCenterData; refetch: () => 
   const [busy, setBusy] = useState(false);
   const prizes = data.prizes.length > 0 ? data.prizes : data.tournament.prizeConfig.map((p, i) => ({ id: `cfg-${i}`, name: p.name, amount: p.amount, status: "PENDING", winnerTeamId: null as string | null }));
 
+  // Tournaments created from the admin form keep prizes only in prizeConfig
+  // JSON — materialize them as real Prize records so winners can be
+  // assigned (and withdrawals unlocked) when the results are locked.
+  async function createPrizeRecords() {
+    setBusy(true);
+    try {
+      await api(`/api/tournaments/${data.tournament.id}/prizes`, {
+        method: "PUT",
+        json: {
+          prizes: data.tournament.prizeConfig.map((p) => ({
+            name: p.name,
+            amount: p.amount,
+            description: p.description ?? undefined,
+          })),
+        },
+      });
+      toast({ title: "Prize records created", description: "Winners will be assigned automatically when final results are locked." });
+      refetch();
+    } catch (e) {
+      toast({ title: "Failed", description: e instanceof Error ? e.message : "Try again", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function updateStatus(id: string, status: string) {
     if (id.startsWith("cfg-")) {
       toast({ title: "Save the prize configuration first", description: "Prize records are created from the configuration." });
@@ -1392,6 +1456,24 @@ function PrizesTab({ data, refetch }: { data: ControlCenterData; refetch: () => 
   return (
     <div className="space-y-4">
       <SectionHeader title="Prize Management" subtitle={`Total pool: ${formatMoney(data.tournament.prizePool)} (PRD 29–30)`} />
+      {data.prizes.length === 0 && data.tournament.prizeConfig.length > 0 && (
+        <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4 flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <CircleAlert className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-semibold text-sm">Prize records haven&apos;t been created yet</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                This tournament has a prize configuration ({data.tournament.prizeConfig.length} prizes) but no prize records.
+                Create them now so 1st/2nd/3rd-place winners can withdraw their prize money after the final results are locked.
+              </p>
+            </div>
+          </div>
+          <Button size="sm" disabled={busy} onClick={createPrizeRecords}>
+            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            Create prize records
+          </Button>
+        </div>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         {prizes.map((p) => (
           <Card key={p.id}>

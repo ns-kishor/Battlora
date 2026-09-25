@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { BadgeCheck, Banknote, CircleAlert, HandCoins, Lock, PencilLine, Wallet } from "lucide-react";
+import { BadgeCheck, Banknote, CircleAlert, HandCoins, Hourglass, Lock, PencilLine, Wallet } from "lucide-react";
 import { useApiData } from "../data-hooks";
 import {
   EmptyState,
@@ -50,9 +50,20 @@ type EligiblePrize = {
   withdrawal: WithdrawalData | null;
 };
 
+type PendingPodium = {
+  tournament: { id: string; name: string };
+  position: number;
+  positionLabel: string;
+  provisionalAmount: number;
+  tournamentStatus: string;
+  matchesPlayed: number;
+  matchesPlanned: number;
+};
+
 type WithdrawalsData = {
   team: { id: string; name: string; logoUrl: string | null; contactNumber: string | null } | null;
   eligible: EligiblePrize[];
+  pending: PendingPodium[];
   phone: string | null;
 };
 
@@ -70,6 +81,7 @@ export function MyWithdrawals() {
   }
 
   const eligible = data?.eligible ?? [];
+  const pending = data?.pending ?? [];
 
   if (eligible.length === 0) {
     return (
@@ -78,11 +90,15 @@ export function MyWithdrawals() {
           title="Withdraw Prize Money"
           subtitle="Payouts for officially recognized podium finishes."
         />
-        <EmptyState
-          icon={<HandCoins className="h-10 w-10" />}
-          title="You currently have no eligible prize withdrawals"
-          description="Withdrawal requests unlock automatically when your team finishes 1st, 2nd or 3rd in a tournament and the administrator publishes the final results."
-        />
+        {pending.length > 0 ? (
+          <PendingPodiumPanel pending={pending} />
+        ) : (
+          <EmptyState
+            icon={<HandCoins className="h-10 w-10" />}
+            title="You currently have no eligible prize withdrawals"
+            description="Withdrawal requests unlock automatically when your team finishes 1st, 2nd or 3rd in a tournament and the administrator publishes the final results."
+          />
+        )}
       </div>
     );
   }
@@ -260,12 +276,61 @@ export function MyWithdrawals() {
         );
       })}
 
+      {pending.length > 0 && <PendingPodiumPanel pending={pending} />}
+
       <p className="text-xs text-muted-foreground">
         Prize withdrawals are available only for officially recognized 1st, 2nd and 3rd-place
         finishes after the administrator publishes the final results. Payouts are processed to the
         mobile wallet you select (bKash, Nagad, Upay or Rocket).
       </p>
     </div>
+  );
+}
+
+// ---------- Provisional podium (final results not locked yet) ----------
+
+function PendingPodiumPanel({ pending }: { pending: PendingPodium[] }) {
+  return (
+    <Card className="border-amber-500/25 bg-amber-500/[0.04]">
+      <CardContent className="p-4 sm:p-6 space-y-4">
+        <div className="flex items-start gap-2.5">
+          <Hourglass className="h-5 w-5 text-amber-400 mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <h3 className="font-display font-bold">Provisional podium — awaiting official results</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your team is currently in a top-3 position, but the final results for these tournaments
+              have not been officially published yet. Your withdrawal form will appear here
+              automatically as soon as the administrator locks the final results — no action needed
+              from you now. Current standings can still change until then.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2.5">
+          {pending.map((p) => (
+            <div
+              key={p.tournament.id}
+              className="flex items-center justify-between gap-3 flex-wrap rounded-lg border border-border bg-card/60 px-3.5 py-3"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <PositionMedal position={p.position} />
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">{p.tournament.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Currently {p.positionLabel}{" · "}
+                    {p.matchesPlayed}/{p.matchesPlanned} matches played
+                    {p.tournamentStatus === "ONGOING" ? " · live" : ""}
+                  </p>
+                </div>
+              </div>
+              <p className="font-display font-bold text-amber-300 shrink-0">
+                {p.provisionalAmount > 0 ? `${formatMoney(p.provisionalAmount)} (provisional)` : "Prize to be confirmed"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

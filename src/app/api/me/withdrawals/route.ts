@@ -3,6 +3,7 @@ import { requireUser, ApiError } from "@/lib/auth";
 import { logActivity, notify, nextSequenceId } from "@/lib/activity";
 import {
   getEligiblePrizes,
+  getPendingPodium,
   assertWithdrawalEligibility,
   validatePhone,
   validateMethod,
@@ -13,11 +14,13 @@ import { POSITION_LABELS } from "@/lib/types";
 import { handleRouteError, ok, readJson, str } from "@/lib/route-helpers";
 
 // GET /api/me/withdrawals — eligible podium prizes + my withdrawal requests
+// (+ provisional podium in tournaments whose final results are not locked yet)
 export async function GET() {
   try {
     const user = await requireUser();
     const { team, eligible } = await getEligiblePrizes(user.id);
-    return ok({ team, eligible, phone: user.phone ?? null });
+    const pending = team ? await getPendingPodium(team.id) : [];
+    return ok({ team, eligible, pending, phone: user.phone ?? null });
   } catch (e) {
     return handleRouteError(e);
   }
