@@ -19,6 +19,9 @@ import {
   PRIZE_STATUS_LABELS,
   TEAM_STATUS_LABELS,
   ROLE_LABELS,
+  WITHDRAWAL_STATUS_LABELS,
+  POSITION_LABELS,
+  POSITION_MEDALS,
 } from "@/lib/types";
 
 // ---------- Brand ----------
@@ -77,6 +80,10 @@ const STATUS_STYLES: Record<string, string> = {
   POSTPONED: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   // complaint
   CONFIRMED: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+  // prize withdrawal
+  PAYMENT_PROCESSING: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  REQUIRES_CORRECTION: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  NOT_SUBMITTED: "bg-slate-500/15 text-slate-400 border-slate-500/30",
   // priority
   NORMAL: "bg-slate-500/15 text-slate-300 border-slate-500/30",
   IMPORTANT: "bg-amber-500/15 text-amber-400 border-amber-500/30",
@@ -135,6 +142,25 @@ export function PriorityBadge({ priority }: { priority: string }) {
 }
 export function PrizeStatusBadge({ status }: { status: string }) {
   return <StatusBadge status={status} labels={PRIZE_STATUS_LABELS} />;
+}
+
+export function WithdrawalStatusBadge({ status }: { status: string }) {
+  return <StatusBadge status={status} labels={WITHDRAWAL_STATUS_LABELS} />;
+}
+
+/** Podium position chip: 🥇 1st Place / 🥈 2nd Place / 🥉 3rd Place */
+export function PositionMedal({ position, className }: { position: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-300",
+        className
+      )}
+    >
+      <span aria-hidden>{POSITION_MEDALS[position] ?? "🏆"}</span>
+      {POSITION_LABELS[position] ?? `${position}th Place`}
+    </span>
+  );
 }
 export function TeamStatusBadge({ status }: { status: string }) {
   return <StatusBadge status={status} labels={TEAM_STATUS_LABELS} />;

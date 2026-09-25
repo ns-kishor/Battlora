@@ -199,6 +199,65 @@ export const PRIZE_STATUS_LABELS: Record<PrizeStatus, string> = {
   PAID: "Paid",
 };
 
+// ---------- Prize withdrawal (PRD: prize payout workflow) ----------
+
+export type WithdrawalStatus =
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "PAYMENT_PROCESSING"
+  | "PAID"
+  | "REJECTED"
+  | "REQUIRES_CORRECTION";
+
+export const WITHDRAWAL_STATUSES: WithdrawalStatus[] = [
+  "UNDER_REVIEW",
+  "APPROVED",
+  "PAYMENT_PROCESSING",
+  "PAID",
+  "REJECTED",
+  "REQUIRES_CORRECTION",
+];
+
+export const WITHDRAWAL_STATUS_LABELS: Record<string, string> = {
+  NOT_SUBMITTED: "Not Submitted",
+  UNDER_REVIEW: "Under Review",
+  APPROVED: "Approved",
+  PAYMENT_PROCESSING: "Payment Processing",
+  PAID: "Paid",
+  REJECTED: "Rejected",
+  REQUIRES_CORRECTION: "Requires Correction",
+};
+
+/** Mobile wallet methods accepted for prize payouts (spec §2.4) */
+export const WITHDRAWAL_METHODS = ["bKash", "Nagad", "Upay", "Rocket"] as const;
+
+export type WithdrawalMethod = (typeof WITHDRAWAL_METHODS)[number];
+
+export const POSITION_LABELS: Record<number, string> = {
+  1: "1st Place",
+  2: "2nd Place",
+  3: "3rd Place",
+};
+
+export const POSITION_MEDALS: Record<number, string> = {
+  1: "\uD83E\uDD47", // 🥇
+  2: "\uD83E\uDD48", // 🥈
+  3: "\uD83E\uDD49", // 🥉
+};
+
+/** Withdrawal timeline event labels (shared by winner + admin views) */
+export const WITHDRAWAL_EVENT_LABELS: Record<string, string> = {
+  SUBMITTED: "Request submitted",
+  RESUBMITTED: "Corrected details resubmitted",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  CORRECTION_REQUESTED: "Correction requested",
+  PAYMENT_PROCESSING: "Payment processing",
+  PAID: "Prize paid",
+  REOPENED: "Reopened by admin",
+  NOTE: "Internal note",
+};
+
 export type TeamStatus = "PENDING" | "VERIFIED" | "SUSPENDED" | "BANNED";
 
 export const TEAM_STATUS_LABELS: Record<TeamStatus, string> = {

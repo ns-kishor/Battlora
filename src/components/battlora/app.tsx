@@ -30,6 +30,7 @@ import { DashboardLeaderboard } from "./dashboard/leaderboard";
 import { MyComplaints } from "./dashboard/complaints";
 import { MyNotifications } from "./dashboard/notifications";
 import { MyPayment } from "./dashboard/payment";
+import { MyWithdrawals } from "./dashboard/withdraw";
 import { DashboardRules } from "./dashboard/rules";
 
 // Admin sections
@@ -39,6 +40,7 @@ import { ControlCenter } from "./admin/control-center";
 import { AdminTeams } from "./admin/teams";
 import { AdminPlayers } from "./admin/players";
 import { AdminPayments } from "./admin/payments";
+import { AdminWithdrawals } from "./admin/withdrawals";
 import { AdminComplaints } from "./admin/complaints";
 import { AdminPenalties } from "./admin/penalties";
 import { AdminAnnouncements } from "./admin/announcements";
@@ -163,6 +165,8 @@ function DashboardRouter() {
       return <MyNotifications />;
     case "payment":
       return <MyPayment />;
+    case "withdraw":
+      return <MyWithdrawals />;
     case "rules":
       return <DashboardRules />;
     default:
@@ -184,6 +188,8 @@ function AdminRouter() {
       return <AdminPlayers />;
     case "payments":
       return <AdminPayments />;
+    case "withdrawals":
+      return <AdminWithdrawals />;
     case "complaints":
       return <AdminComplaints />;
     case "penalties":

@@ -74,14 +74,16 @@ export async function notifyTournamentTeams(
   );
 }
 
-/** Sequential public IDs: REG-2026-00128, CMP-2026-00042 */
-export async function nextSequenceId(prefix: "REG" | "CMP"): Promise<string> {
+/** Sequential public IDs: REG-2026-00128, CMP-2026-00042, WDL-2026-00007 */
+export async function nextSequenceId(prefix: "REG" | "CMP" | "WDL"): Promise<string> {
   const year = new Date().getFullYear();
   let count = 0;
   if (prefix === "REG") {
     count = await db.registration.count();
-  } else {
+  } else if (prefix === "CMP") {
     count = await db.complaint.count();
+  } else {
+    count = await db.prizeWithdrawal.count();
   }
   // +1 and retry-safe: append count until unique
   let seq = count + 1;
@@ -90,7 +92,9 @@ export async function nextSequenceId(prefix: "REG" | "CMP"): Promise<string> {
     const exists =
       prefix === "REG"
         ? await db.registration.findUnique({ where: { regId: candidate } })
-        : await db.complaint.findUnique({ where: { ticketId: candidate } });
+        : prefix === "CMP"
+          ? await db.complaint.findUnique({ where: { ticketId: candidate } })
+          : await db.prizeWithdrawal.findUnique({ where: { requestNo: candidate } });
     if (!exists) return candidate;
     seq += 1;
   }

@@ -16,6 +16,7 @@ import {
   CreditCard,
   DoorOpen,
   Gamepad2,
+  HandCoins,
   Home,
   KeyRound,
   LayoutDashboard,
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
   { section: "complaints", label: "Complaints", icon: MessageSquareWarning },
   { section: "notifications", label: "Notifications", icon: Bell },
   { section: "payment", label: "Payment", icon: CreditCard },
+  { section: "withdraw", label: "Withdraw", icon: HandCoins },
   { section: "rules", label: "Rules", icon: ListChecks },
 ];
 

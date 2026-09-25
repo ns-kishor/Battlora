@@ -34,6 +34,7 @@ model User {
   activityLogs  ActivityLog[]
   complaints    Complaint[]   @relation("ComplaintSubmitter")
   penaltiesGiven Penalty[]    @relation("PenaltyIssuer")
+  withdrawalsSubmitted PrizeWithdrawal[] @relation("WithdrawalSubmitter")
 }
 
 model Session {
@@ -63,6 +64,7 @@ model Team {
   matchResults  MatchResult[]
   penalties     Penalty[]
   complaints    Complaint[]
+  withdrawals   PrizeWithdrawal[]
 }
 
 model Player {
@@ -124,6 +126,7 @@ model Tournament {
   complaints        Complaint[]
   penalties         Penalty[]
   prizes            Prize[]
+  withdrawals       PrizeWithdrawal[]
 }
 
 model Registration {
@@ -298,6 +301,55 @@ model Prize {
   paidAt       DateTime?
   notes        String?
   createdAt    DateTime   @default(now())
+
+  withdrawal   PrizeWithdrawal?
+}
+
+// Prize withdrawal request — created by an eligible 1st/2nd/3rd-place winner
+// after the tournament results are locked (PRD: prize payout workflow)
+model PrizeWithdrawal {
+  id            String     @id @default(cuid())
+  requestNo     String     @unique // WDL-2026-00007
+  // One withdrawal per prize → prevents duplicates for the same tournament + position
+  prizeId       String     @unique
+  prize         Prize      @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  tournamentId  String
+  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamId        String
+  team          Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  // 1 | 2 | 3 — derived from the finalized result, never client-supplied
+  position      Int
+  contactPhone  String
+  // bKash | Nagad | Upay | Rocket
+  method        String
+  accountNumber String
+  // UNDER_REVIEW | APPROVED | PAYMENT_PROCESSING | PAID | REJECTED | REQUIRES_CORRECTION
+  status        String     @default("UNDER_REVIEW")
+  adminNote     String?
+  submittedById String
+  submittedBy   User       @relation("WithdrawalSubmitter", fields: [submittedById], references: [id])
+  reviewedById  String?
+  reviewedAt    DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  events        WithdrawalEvent[]
+}
+
+// Immutable audit timeline for every withdrawal state change / admin note
+model WithdrawalEvent {
+  id           String          @id @default(cuid())
+  withdrawalId String
+  withdrawal   PrizeWithdrawal @relation(fields: [withdrawalId], references: [id], onDelete: Cascade)
+  // SUBMITTED | RESUBMITTED | APPROVED | REJECTED | CORRECTION_REQUESTED | PAYMENT_PROCESSING | PAID | REOPENED | NOTE
+  action       String
+  status       String // resulting status
+  note         String?
+  // internal notes are visible to admins only, never to the winner
+  internal     Boolean         @default(false)
+  actorName    String
+  createdAt    DateTime        @default(now())
 }
 
 model ActivityLog {
