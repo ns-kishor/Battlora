@@ -16,6 +16,7 @@ import { AdminLayout } from "./admin/admin-layout";
 import { Home } from "./public/home";
 import { TournamentList } from "./public/tournament-list";
 import { TournamentDetail } from "./public/tournament-detail";
+import { Leaderboards } from "./public/leaderboards";
 import { AuthView } from "./public/auth-view";
 import { RegisterWizard } from "./public/register-wizard";
 
@@ -131,6 +132,9 @@ function PublicRouter() {
     const id = route.segments[1];
     if (id) return <TournamentDetail idOrSlug={id} />;
     return <TournamentList />;
+  }
+  if (root === "leaderboards") {
+    return <Leaderboards />;
   }
   if (root === "login" || root === "register") {
     return <AuthView mode={root === "login" ? "login" : "register"} />;

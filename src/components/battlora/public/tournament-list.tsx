@@ -19,11 +19,20 @@ const FILTERS = [
 
 export function TournamentList() {
   const { navigate, route } = useRouter();
-  const initialTab = route.query?.get("tab");
-  const [filter, setFilter] = useState(
-    FILTERS.some((f) => f.value === initialTab) ? initialTab! : "ALL"
-  );
+  const tabParam = route.query?.get("tab")?.toUpperCase() ?? null;
+  const validTab =
+    tabParam && FILTERS.some((f) => f.value === tabParam) ? tabParam : null;
+  const [filter, setFilter] = useState(validTab ?? "ALL");
   const { data, loading } = useApiData<{ tournaments: TournamentCardData[] }>("/api/tournaments");
+
+  // React "adjust state during render" pattern: when ?tab= changes while the
+  // list stays mounted (e.g. /tournaments?tab=ongoing link from another page),
+  // re-apply the requested filter without an effect-driven setState cascade.
+  const [lastTab, setLastTab] = useState<string | null>(validTab);
+  if (validTab !== lastTab) {
+    setLastTab(validTab);
+    setFilter(validTab ?? "ALL");
+  }
 
   const tournaments = useMemo(() => {
     const list = data?.tournaments ?? [];

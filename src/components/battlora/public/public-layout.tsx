@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { label: "Tournaments", path: "/tournaments", icon: Swords },
-  { label: "Leaderboards", path: "/tournaments?tab=ongoing", icon: Trophy },
+  { label: "Leaderboards", path: "/leaderboards", icon: Trophy },
 ];
 
 function NavLinks({
@@ -218,6 +218,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <li>
                 <button className="hover:text-primary transition-colors cursor-pointer" onClick={() => navigate("/tournaments")}>
                   Browse Tournaments
+                </button>
+              </li>
+              <li>
+                <button className="hover:text-primary transition-colors cursor-pointer" onClick={() => navigate("/leaderboards")}>
+                  Leaderboards
                 </button>
               </li>
               <li>

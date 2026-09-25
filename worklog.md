@@ -121,3 +121,26 @@ Stage Summary:
 - Browser E2E: launcher + panel on public, login, and admin pages; suggestion click + typed question + staff question all return correct scoped answers (admin summary: "18 users, 13 teams, 1 open complaint"); panel state persists across hash navigation; multi-turn context works
 - VLM QA: desktop panel pinned bottom-right PASS, mobile sheet PASS, admin overlay PASS, markdown bullets/bold render PASS
 - Ops note: in this sandbox both external providers are region-blocked at the network level, so responses currently serve via the built-in local fallback; in a supported region OpenAI→Gemini take over automatically with zero code changes (env-only switch)
+
+---
+Task ID: 7
+Agent: Main agent (Super Z)
+Task: Fix "Leaderboards page not working properly"
+
+Work Log:
+- Reproduced via agent-browser: public nav "Leaderboards" pointed to /tournaments?tab=ongoing, but TournamentList compared the tab param case-sensitively against uppercase filter values (ONGOING) → filter silently fell back to "All" and nothing was filtered; worse, there was no actual leaderboards page at all (just a filtered tournaments list)
+- Built a real public Leaderboards page (src/components/battlora/public/leaderboards.tsx) at /#/leaderboards:
+  - Eligible tournaments = ONGOING + COMPLETED, sorted live-first then most-recently-finished
+  - Tournament selector chips (LIVE dot for ongoing, aria tablist) + deep-link support via ?t=<slug|id>
+  - Meta card: name, TournamentStatusBadge, "Final results locked" chip, prize pool, game/mode, match count, start date, View Tournament CTA
+  - Reuses shared LeaderboardTable (desktop table + mobile cards + Overall/Kills/Booyah modes); 20s live polling when tournament is ONGOING; highlightTeamId from useAuth().team so signed-in users see their own row highlighted; "Your team is highlighted" hint; empty states for no standings-eligible tournaments
+- Wiring: app.tsx PublicRouter "leaderboards" route case; public-layout.tsx NAV_LINKS Leaderboards → /leaderboards (desktop + mobile drawer share NAV_LINKS) + footer "Leaderboards" link in Compete column
+- tournament-list.tsx bug fix: tab param now uppercased before matching, and filter re-syncs when ?tab= changes while the list stays mounted — implemented with React's "adjust state during render" pattern (lastTab state compare) because the new react-hooks/set-state-in-effect rule forbids effect-driven setState
+- ESLint full project: 0 errors 0 warnings
+
+Stage Summary:
+- E2E verified: guest nav click → /#/leaderboards renders Pro Series standings (10 teams, Team Alpha #1 96 pts, LIVE badge); chip switch to Champions League updates URL to ?t=battlora-champions-league-2025 and shows final standings (Team Charlie #1 86 pts); deep link /#/tournaments?tab=completed selects Completed + filters to 1 tournament; lowercase tab=ongoing + in-place hash change re-applies filter (case + stale-query bugs fixed)
+- Captain session: Team Alpha row highlighted (bg-primary/10) + hint text; dashboard/leaderboard section unaffected (10 rows, no regression)
+- Mobile 390px: no horizontal overflow, chips + compact standings cards render
+- VLM QA on clean screenshots: desktop 10/10, mobile 10/10 (an initial VLM "table misalignment" complaint was disproven by DOM geometry — headerBottom=548/dataRowTop=548 flush, headerInsideCard, scrollWidth==clientWidth — and was a mid-interaction screenshot artifact; fresh screenshot passes all points)
+- Console/dev-server clean after fresh reload (one stale HMR error during mid-edit state, gone on reload)
