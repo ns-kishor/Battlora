@@ -45,6 +45,7 @@ import { AdminUsers } from "./admin/users";
 import { AdminActivity } from "./admin/activity";
 import { AdminSettings } from "./admin/settings";
 import { AdminAccount } from "./admin/account";
+import { AIAssistant } from "./ai/assistant";
 
 export function BattloraApp() {
   return (
@@ -88,33 +89,37 @@ function AppShell() {
       navigate("/login?next=/admin", { replace: true });
   }, [root, user, loading, navigate]);
 
-  if (loading) return <SplashScreen />;
-
-  // Focused full-screen route: tournament registration wizard
-  if (root === "join") {
-    return <RegisterWizard tournamentId={route.segments[1]} />;
-  }
-
-  if (root === "dashboard") {
-    return (
+  let content: React.ReactNode;
+  if (loading) {
+    content = <SplashScreen />;
+  } else if (root === "join") {
+    // Focused full-screen route: tournament registration wizard
+    content = <RegisterWizard tournamentId={route.segments[1]} />;
+  } else if (root === "dashboard") {
+    content = (
       <DashboardLayout>
         <DashboardRouter />
       </DashboardLayout>
     );
-  }
-
-  if (root === "admin") {
-    return (
+  } else if (root === "admin") {
+    content = (
       <AdminLayout>
         <AdminRouter />
       </AdminLayout>
     );
+  } else {
+    content = (
+      <PublicLayout>
+        <PublicRouter />
+      </PublicLayout>
+    );
   }
 
   return (
-    <PublicLayout>
-      <PublicRouter />
-    </PublicLayout>
+    <>
+      {content}
+      <AIAssistant />
+    </>
   );
 }
 
