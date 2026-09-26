@@ -16,7 +16,7 @@ const body = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Battlora — Free Fire Esports Tournament Platform",
+    default: "Battlora — Free Fire E-sports Tournament Platform",
     template: "%s | Battlora",
   },
   description:
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     "competitive gaming",
   ],
   openGraph: {
-    title: "Battlora — Free Fire Esports Tournament Platform",
+    title: "Battlora — Free Fire E-sports Tournament Platform",
     description:
       "BATTLE. COMPETE. CONQUER. Professional Free Fire tournaments with automated scoring, transparent leaderboards and prize management.",
     siteName: "Battlora",

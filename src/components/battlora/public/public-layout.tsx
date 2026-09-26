@@ -253,14 +253,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               Support
             </h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>support@battlora.gg</li>
-              <li>+880 1700-000000</li>
-              <li>Sat – Thu, 10:00 – 22:00</li>
+              <li>battleora.advance@gmail.com</li>
+              <li>+880 1402585503</li>
+              <li>Sat – Thu, 2pm – 12am</li>
             </ul>
           </div>
         </div>
         <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Battlora. BATTLE. COMPETE. CONQUER.
+          © {new Date().getFullYear()} Battlora.
         </div>
       </footer>
     </div>

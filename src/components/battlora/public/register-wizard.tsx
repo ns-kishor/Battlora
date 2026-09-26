@@ -143,7 +143,7 @@ export function RegisterWizard({ tournamentId }: { tournamentId?: string }) {
           }));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [user]);
 
   const t = tData?.tournament;
@@ -809,7 +809,7 @@ function PlayerListEditor({
             <div className="space-y-1">
               <Label className="text-xs">Free Fire UID *</Label>
               <Input
-                placeholder="e.g. 123456789"
+                placeholder="e.g. 1234567890"
                 inputMode="numeric"
                 value={p.uid}
                 onChange={(e) => update(i, { uid: e.target.value.replace(/\D/g, "") })}
@@ -840,7 +840,7 @@ function PlayerListEditor({
             </div>
             <div className="space-y-1 flex items-end gap-2">
               {p.photoUrl && (
-                 
+
                 <img src={p.photoUrl} alt="player" className="h-9 w-9 rounded-md object-cover border border-border" />
               )}
               <div className="flex-1">
