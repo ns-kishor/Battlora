@@ -97,6 +97,7 @@ async function buildPublicContext() {
     db.tournament.findMany({
       where: { status: { not: "DRAFT" } },
       select: {
+        id: true,
         name: true,
         slug: true,
         status: true,

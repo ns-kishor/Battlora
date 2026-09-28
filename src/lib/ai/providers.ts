@@ -45,11 +45,11 @@ async function readErrorMessage(res: Response): Promise<string> {
 }
 
 /** fetch with timeout + uniform error handling */
-async function postJSON(
+async function postJSON<T = any>(
   url: string,
   headers: Record<string, string>,
   payload: unknown
-): Promise<string> {
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -63,7 +63,7 @@ async function postJSON(
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${await readErrorMessage(res)}`);
     }
-    return (await res.json()) as string;
+    return (await res.json()) as T;
   } finally {
     clearTimeout(timer);
   }
@@ -77,13 +77,15 @@ class OpenAIProvider implements AIProvider {
     return process.env.OPENAI_API_KEY?.trim();
   }
   get model() {
-    return process.env.AI_OPENAI_MODEL?.trim() || "gpt-4o";
+    return process.env.AI_OPENAI_MODEL?.trim() || "gpt-4o-mini";
   }
   isConfigured() {
     return isKey(this.key);
   }
   async chat(messages: ChatMessage[]): Promise<string> {
-    const raw = await postJSON(
+    const parsed = await postJSON<{
+      choices?: { message?: { content?: string } }[];
+    }>(
       "https://api.openai.com/v1/chat/completions",
       {
         Authorization: `Bearer ${this.key}`,
@@ -96,9 +98,6 @@ class OpenAIProvider implements AIProvider {
         max_tokens: 900,
       }
     );
-    const parsed = JSON.parse(raw) as {
-      choices?: { message?: { content?: string } }[];
-    };
     const content = parsed.choices?.[0]?.message?.content?.trim();
     if (!content) throw new Error("Empty response from OpenAI");
     return content;
@@ -113,7 +112,7 @@ class GeminiProvider implements AIProvider {
     return process.env.GEMINI_API_KEY?.trim();
   }
   get model() {
-    return process.env.AI_GEMINI_MODEL?.trim() || "gemini-3.8-flash";
+    return process.env.AI_GEMINI_MODEL?.trim() || "gemini-2.0-flash";
   }
   isConfigured() {
     return isKey(this.key);
@@ -129,10 +128,11 @@ class GeminiProvider implements AIProvider {
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
       }));
-    const raw = await postJSON(
-      `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`,
+    const parsed = await postJSON<{
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    }>(
+      `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.key}`,
       {
-        "x-goog-api-key": this.key,
         "Content-Type": "application/json",
       },
       {
@@ -141,9 +141,6 @@ class GeminiProvider implements AIProvider {
         generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
       }
     );
-    const parsed = JSON.parse(raw) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
     const content = parsed.candidates?.[0]?.content?.parts
       ?.map((p) => p.text ?? "")
       .join("")
@@ -153,16 +150,47 @@ class GeminiProvider implements AIProvider {
   }
 }
 
+// ---------- Groq ----------
+
+class GroqProvider implements AIProvider {
+  name = "groq";
+  get key() {
+    return process.env.GROQ_API_KEY?.trim();
+  }
+  get model() {
+    return process.env.AI_GROQ_MODEL?.trim() || "llama-3.3-70b-versatile";
+  }
+  isConfigured() {
+    return isKey(this.key);
+  }
+  async chat(messages: ChatMessage[]): Promise<string> {
+    const parsed = await postJSON<{
+      choices?: { message?: { content?: string } }[];
+    }>(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        Authorization: `Bearer ${this.key}`,
+        "Content-Type": "application/json",
+      },
+      {
+        model: this.model,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        temperature: 0.4,
+        max_tokens: 900,
+      }
+    );
+    const content = parsed.choices?.[0]?.message?.content?.trim();
+    if (!content) throw new Error("Empty response from Groq");
+    return content;
+  }
+}
+
 // ---------- Local sandbox fallback ----------
-// Both OpenAI and Gemini enforce regional availability. When the
-// hosting region is not served by either provider, this optional
-// built-in fallback keeps the assistant functional. Disable with
-// AI_ENABLE_LOCAL_FALLBACK=false.
 
 class LocalFallbackProvider implements AIProvider {
   name = "local";
   isEnabled() {
-    return process.env.AI_ENABLE_LOCAL_FALLBACK !== "false";
+    return process.env.AI_ENABLE_LOCAL_FALLBACK === "true";
   }
   isConfigured() {
     return this.isEnabled();
@@ -186,19 +214,30 @@ class LocalFallbackProvider implements AIProvider {
 // ---------- Chain resolution ----------
 
 export function resolveProviderChain(): AIProvider[] {
-  const openai = new OpenAIProvider();
-  const gemini = new GeminiProvider();
-  const primary =
-    process.env.AI_PROVIDER_PRIMARY?.trim().toLowerCase() === "gemini"
-      ? gemini
-      : openai;
-  const secondary = primary === gemini ? openai : gemini;
-  const chain: AIProvider[] = [primary, secondary].filter((p) =>
-    p.isConfigured()
-  );
+  const providers: Record<string, AIProvider> = {
+    gemini: new GeminiProvider(),
+    openai: new OpenAIProvider(),
+    groq: new GroqProvider(),
+  };
+
+  const primaryName = process.env.AI_PROVIDER_PRIMARY?.trim().toLowerCase() || "gemini";
+  const primary = providers[primaryName] || providers.gemini;
+
+  // Order chain: primary first, then other configured external providers
+  const chain: AIProvider[] = [primary];
+  for (const [name, p] of Object.entries(providers)) {
+    if (p !== primary && p.isConfigured()) {
+      chain.push(p);
+    }
+  }
+
+  // Filter only configured
+  const configured = chain.filter((p) => p.isConfigured());
+
   const local = new LocalFallbackProvider();
-  if (local.isConfigured()) chain.push(local);
-  return chain;
+  if (local.isConfigured()) configured.push(local);
+
+  return configured;
 }
 
 /**
@@ -224,3 +263,4 @@ export async function getAIReply(messages: ChatMessage[]): Promise<string> {
   console.error("[ai-assistant] all providers failed:", failures.join(" | "));
   throw new Error("AI_ASSISTANT_UNAVAILABLE");
 }
+
