@@ -112,7 +112,7 @@ class GeminiProvider implements AIProvider {
     return process.env.GEMINI_API_KEY?.trim();
   }
   get model() {
-    return process.env.AI_GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+    return process.env.AI_GEMINI_MODEL?.trim() || "gemini-flash-latest";
   }
   isConfigured() {
     return isKey(this.key);
@@ -128,25 +128,45 @@ class GeminiProvider implements AIProvider {
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
       }));
-    const parsed = await postJSON<{
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    }>(
-      `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.key}`,
-      {
-        "Content-Type": "application/json",
-      },
-      {
-        ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
-        contents,
-        generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
-      }
+
+    const candidateModels = Array.from(
+      new Set([
+        this.model,
+        "gemini-flash-latest",
+        "gemini-3.8-flash",
+        "gemini-3.5-flash",
+        "gemini-pro-latest",
+      ])
     );
-    const content = parsed.candidates?.[0]?.content?.parts
-      ?.map((p) => p.text ?? "")
-      .join("")
-      .trim();
-    if (!content) throw new Error("Empty response from Gemini");
-    return content;
+
+    let lastError: Error | null = null;
+    for (const model of candidateModels) {
+      try {
+        const parsed = await postJSON<{
+          candidates?: { content?: { parts?: { text?: string }[] } }[];
+        }>(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.key}`,
+          {
+            "Content-Type": "application/json",
+          },
+          {
+            ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+            contents,
+            generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
+          }
+        );
+        const content = parsed.candidates?.[0]?.content?.parts
+          ?.map((p) => p.text ?? "")
+          .join("")
+          .trim();
+        if (content) return content;
+      } catch (err: any) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn(`[gemini] model "${model}" failed:`, lastError.message);
+      }
+    }
+
+    throw lastError || new Error("All Gemini models failed to return a response");
   }
 }
 
