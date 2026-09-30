@@ -22,7 +22,7 @@ export interface AIProvider {
   chat(messages: ChatMessage[]): Promise<string>;
 }
 
-const REQUEST_TIMEOUT_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 25_000;
 
 function isKey(v: string | undefined): v is string {
   return typeof v === "string" && v.trim().length > 10;
@@ -48,10 +48,11 @@ async function readErrorMessage(res: Response): Promise<string> {
 async function postJSON<T = any>(
   url: string,
   headers: Record<string, string>,
-  payload: unknown
+  payload: unknown,
+  timeoutMs: number = REQUEST_TIMEOUT_MS
 ): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -83,24 +84,34 @@ class OpenAIProvider implements AIProvider {
     return isKey(this.key);
   }
   async chat(messages: ChatMessage[]): Promise<string> {
-    const parsed = await postJSON<{
-      choices?: { message?: { content?: string } }[];
-    }>(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        Authorization: `Bearer ${this.key}`,
-        "Content-Type": "application/json",
-      },
-      {
-        model: this.model,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        temperature: 0.4,
-        max_tokens: 900,
+    const candidateModels = Array.from(new Set([this.model, "gpt-4o-mini", "gpt-4o"]));
+    let lastError: Error | null = null;
+    for (const model of candidateModels) {
+      try {
+        const parsed = await postJSON<{
+          choices?: { message?: { content?: string } }[];
+        }>(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            Authorization: `Bearer ${this.key}`,
+            "Content-Type": "application/json",
+          },
+          {
+            model,
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+            temperature: 0.4,
+            max_tokens: 900,
+          },
+          20_000
+        );
+        const content = parsed.choices?.[0]?.message?.content?.trim();
+        if (content) return content;
+      } catch (err: any) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn(`[openai] model "${model}" failed:`, lastError.message);
       }
-    );
-    const content = parsed.choices?.[0]?.message?.content?.trim();
-    if (!content) throw new Error("Empty response from OpenAI");
-    return content;
+    }
+    throw lastError || new Error("Empty response from OpenAI");
   }
 }
 
@@ -112,7 +123,7 @@ class GeminiProvider implements AIProvider {
     return process.env.GEMINI_API_KEY?.trim();
   }
   get model() {
-    return process.env.AI_GEMINI_MODEL?.trim() || "gemini-flash-latest";
+    return process.env.AI_GEMINI_MODEL?.trim() || "gemini-3.5-flash";
   }
   isConfigured() {
     return isKey(this.key);
@@ -122,20 +133,39 @@ class GeminiProvider implements AIProvider {
       .filter((m) => m.role === "system")
       .map((m) => m.content)
       .join("\n\n");
-    const contents = messages
+
+    const rawContents = messages
       .filter((m) => m.role !== "system")
       .map((m) => ({
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
       }));
 
+    // Normalize turns for Gemini API (roles must alternate and first must be "user")
+    const contents: { role: string; parts: { text: string }[] }[] = [];
+    for (const item of rawContents) {
+      const prev = contents[contents.length - 1];
+      if (prev && prev.role === item.role) {
+        prev.parts[0].text += "\n\n" + item.parts[0].text;
+      } else {
+        contents.push({ role: item.role, parts: [{ text: item.parts[0].text }] });
+      }
+    }
+    if (contents.length > 0 && contents[0].role === "model") {
+      contents.unshift({ role: "user", parts: [{ text: "Hello" }] });
+    }
+    if (contents.length === 0) {
+      contents.push({ role: "user", parts: [{ text: "Hello" }] });
+    }
+
     const candidateModels = Array.from(
       new Set([
         this.model,
+        "gemini-3.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3.7-flash",
         "gemini-flash-latest",
         "gemini-3.8-flash",
-        "gemini-3.5-flash",
-        "gemini-pro-latest",
       ])
     );
 
@@ -153,7 +183,8 @@ class GeminiProvider implements AIProvider {
             ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
             contents,
             generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
-          }
+          },
+          15_000
         );
         const content = parsed.candidates?.[0]?.content?.parts
           ?.map((p) => p.text ?? "")

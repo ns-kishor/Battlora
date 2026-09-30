@@ -3,6 +3,9 @@ import { getAIReply, type ChatMessage } from "@/lib/ai/providers";
 import { buildAssistantMessages } from "@/lib/ai/assistant";
 import { handleRouteError, ok, readJson } from "@/lib/route-helpers";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 // ============================================================
 // POST /api/ai/chat — Battlora AI Assistant
 // - Server-side only: the system prompt, live context and AI
